@@ -14,6 +14,6 @@
 
 Route::get('/', 'UserScoreController@index');
 
-Route::post('/score', 'UserScoreController@eventsScore');
+Route::post('/score', 'UserScoreController@score');
 
 //Route::get('/battle/{username1}/{username2}', 'UserScoreController@battle');

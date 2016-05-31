@@ -5,7 +5,7 @@
 @include('userScore.form_one')
 
 @if (!is_null($message))
-<!--Message error-->
+<!--Error message-->
 <p>{{$message}}</p>
 @else
 
@@ -19,6 +19,19 @@
 		<th>Events Score</td>
 		<td>{{$userScore->eventScore}}</td>
 	</tr>
+	<tr>
+		<th>Followers</td>
+		<td>{{$userScore->followers}}</td>
+	</tr>
+	<tr>
+		<th>Total stars</td>
+		<td>{{$userScore->stars}}</td>
+	</tr>
+	<tr>
+		<th>Total score</td>
+		<td>{{$userScore->totalScore()}}</td>
+	</tr>
+
 </table>
 </div>
 

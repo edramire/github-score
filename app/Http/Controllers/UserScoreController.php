@@ -15,21 +15,38 @@ class UserScoreController extends Controller
     	return view('userScore.index');
     }
 
-    public function eventsScore(Request $request)
+    public function score(Request $request)
     {
     	$username = $request->input('username');
-    	$result = $this->readEventsScore($username);
+    	$result1 = $this->readEventsScore($username);
+    	$result2 = $this->readUserData($username);
+
 		$message = NULL;
 		$score = 0;
-    	if(is_string($result)){
-    		$message = $result;
+		$stars = 0;
+		$followers = 0;
+
+    	if(is_string($result1)){
+    		$message = $result1;
     	}else{
-    		$score = $result;
+    		$score = $result1;
     	}
 
-    	$userScore = new UserScore(['name'=>$username, 'eventScore'=>$score]);
+    	if(is_string($result2)){
+    		$message = $result2;
+    	}else{
+    		$followers = $result2['followers'];
+    		$stars = $result2['stars'];
+    	}
 
-    	return view('userScore.eventsScore',[
+    	$userScore = new UserScore([
+    		'name'=>$username, 
+    		'eventScore'=>$score, 
+    		'stars'=>$stars, 
+    		'followers'=>$followers
+    		]);
+
+    	return view('userScore.score',[
     		'userScore'=>$userScore,
     		'message'=>$message
     		]);
@@ -38,21 +55,8 @@ class UserScoreController extends Controller
 
     private function readEventsScore($username)
     {
-		//crear opciones de contexto, exigido por github
-		$opts = [
-		    'http' => [
-		        'method' => 'GET',
-		        'header' => [
-		            'User-Agent: PHP'
-		        ]
-		    ]
-		];
-
-		$context = stream_context_create($opts);
-		$url = "https://api.github.com/users/".$username."/events";
-		
-		$content = file_get_contents($url, false, $context);
-		$jsonArray = json_decode($content,true);
+		$url = "https://api.github.com/users/".$username."/events";		
+		$jsonArray = $this->getJsonArray($url);		
 
 		if(isset($jsonArray['message'])){
 			return $jsonArray['message'];
@@ -82,5 +86,50 @@ class UserScoreController extends Controller
 		}
 
 		return $score;
+    }
+
+    private function getJsonArray($url){
+    	//crear opciones de contexto, exigido por github
+		$opts = [
+		    'http' => [
+		        'method' => 'GET',
+		        'header' => [
+		            'User-Agent: PHP'
+		        ]
+		    ]
+		];
+		
+		$context = stream_context_create($opts);
+		$content = file_get_contents($url, false, $context);
+		$jsonArray = json_decode($content,true);
+
+		return $jsonArray;
+    }
+
+    private function readUserData($username)
+    {
+		$url = "https://api.github.com/users/".$username;
+		$jsonArray = $this->getJsonArray($url);			
+
+		if(isset($jsonArray['message'])){
+			return $jsonArray['message'];
+		}
+
+		$followers = $jsonArray['followers'];
+
+		$url = "https://api.github.com/users/".$username."/repos";
+		$jsonArray = $this->getJsonArray($url);
+
+		if(isset($jsonArray['message'])){
+			return $jsonArray['message'];
+		}
+
+		$totalStars = 0;
+
+		foreach ($jsonArray as $repo) {
+			$totalStars += intval($repo['stargazers_count']);
+		}
+
+		return array('followers'=>$followers, 'stars'=>$totalStars);
     }
 }
