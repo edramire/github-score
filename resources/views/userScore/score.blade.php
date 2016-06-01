@@ -4,15 +4,15 @@
 
 @include('userScore.form_one')
 
-
 @if (isset($message) || isset($userScore))
+
+	<div class="container">
 
 	@if (isset($message))
 	<!--Error message-->
-	<p>{{$message}}</p>
+	<div class="alert alert-danger" role="alert">{{$message}}</div>
 	@else
 
-	<div class="container">
 	<table class="table">
 		<tr>
 			<th>Username</td>
@@ -36,9 +36,9 @@
 		</tr>
 
 	</table>
-	</div>
 
 	@endif
+	</div>
 
 @endif
 

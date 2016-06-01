@@ -5,7 +5,7 @@
 	<div class="form-group">
 		<label for="username" class="col-sm-3 control-label">Username</label>
         <div class="col-sm-6">
-			<input type="text" class="form-control" id="username" name='username'>
+			<input type="text" class="form-control" id="username" name='username' autofocus="true">
         </div>
 	</div>
 

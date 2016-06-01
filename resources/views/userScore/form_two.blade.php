@@ -5,14 +5,14 @@
 	<div class="form-group">
 		<label for="username1" class="col-sm-3 control-label">Username 1</label>
         <div class="col-sm-6">
-			<input type="text" class="form-control" id="username1" name='username1'>
+			<input type="text" class="form-control" id="username1" name="username1" autofocus="true">
         </div>
 	</div>
 	
 	<div class="form-group">
 		<label for="username2" class="col-sm-3 control-label">Username 2</label>
         <div class="col-sm-6">
-			<input type="text" class="form-control" id="username2" name='username2'>
+			<input type="text" class="form-control" id="username2" name="username2">
         </div>
 	</div>
 

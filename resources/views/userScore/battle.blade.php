@@ -5,21 +5,20 @@
 @include('userScore.form_two')
 
 @if (isset($message) || (isset($userScore1) && isset($userScore2)))
+	<div class="container">
 
 	@if (isset($message))
 	<!--Error message-->
-	<p>{{$message}}</p>
+	<div class="alert alert-danger" role="alert">{{$message}}</div>
 	@else
-
-	<div class="container">
 
 	@if (isset($winner))
 		<div class="well">
-			<h3>Winner is {{$winner->name}}.</h3>
+			<h3 class="text-center">{{$winner->name}} wins!</h3>
 		</div>
 	@else
 		<div class="well">
-			<h3>Duelist are tied.</h3>
+			<h3 class="text-center">Duelist are tied.</h3>
 		</div>
 	@endif
 
@@ -51,9 +50,9 @@
 		</tr>
 
 	</table>
-	</div>
 
 	@endif
+	</div>
 
 @endif
 

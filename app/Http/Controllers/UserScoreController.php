@@ -65,6 +65,8 @@ class UserScoreController extends Controller
     }
 
 
+    /* inicio funciones de ayuda */
+
     private function getUserScore($username)
     {
     	$result1 = $this->readEventsScore($username);
@@ -109,15 +111,14 @@ class UserScoreController extends Controller
 
     private function readEventsScore($username)
     {
-		$url = "https://api.github.com/users/".$username."/events";		
-		$jsonArray = $this->getJsonArray($url);		
-
-		if(isset($jsonArray['message'])){
-			return $jsonArray['message'];
+		$url = "https://api.github.com/users/".$username."/events";
+		$code = $this->get_http_response_code($url);
+		if($code != "200"){
+			return "Error:".$code;
 		}
+		$jsonArray = $this->getJsonArray($url);	
 
 		$score = 0;
-
 		foreach ($jsonArray as $event) {
 			$string = $event['type'];
 			switch ($string) {
@@ -154,6 +155,7 @@ class UserScoreController extends Controller
 		];
 		
 		$context = stream_context_create($opts);
+		
 		$content = file_get_contents($url, false, $context);
 		$jsonArray = json_decode($content,true);
 
@@ -163,11 +165,11 @@ class UserScoreController extends Controller
     private function readUserFollowers($username)
     {
 		$url = "https://api.github.com/users/".$username;
-		$jsonArray = $this->getJsonArray($url);			
-
-		if(isset($jsonArray['message'])){
-			return $jsonArray['message'];
+		$code = $this->get_http_response_code($url);
+		if($code != "200"){
+			return "Error:".$code;
 		}
+		$jsonArray = $this->getJsonArray($url);			
 
 		$followers = $jsonArray['followers'];
 
@@ -176,12 +178,12 @@ class UserScoreController extends Controller
 
     private function readUserStars($username){
     	$url = "https://api.github.com/users/".$username."/repos";
-		$jsonArray = $this->getJsonArray($url);
-
-		if(isset($jsonArray['message'])){
-			return $jsonArray['message'];
+		$code = $this->get_http_response_code($url);
+		if($code != "200"){
+			return "Error:".$code;
 		}
-
+		$jsonArray = $this->getJsonArray($url);	
+		
 		$totalStars = 0;
 		foreach ($jsonArray as $repo) {
 			$totalStars += intval($repo['stargazers_count']);
@@ -189,4 +191,19 @@ class UserScoreController extends Controller
 
 		return $totalStars;
     }
+
+    private function get_http_response_code($url) {
+		$opts = [
+		    'http' => [
+		        'method' => 'GET',
+		        'header' => [
+		            'User-Agent: PHP'
+		        ]
+		    ]
+		];
+    	stream_context_set_default($opts);
+    	$headers = get_headers($url);
+    	return substr($headers[0], 9, 3);
+	}
+
 }
