@@ -15,11 +15,61 @@ class UserScoreController extends Controller
     	return view('userScore.index');
     }
 
+    public function score_form()
+    {
+		return view('userScore.score');    		
+    }
+
     public function score(Request $request)
     {
     	$username = $request->input('username');
+
+    	$result = $this->getUserScore($username);
+
+    	return view('userScore.score',[
+    		'userScore'=>$result['userScore'],
+    		'message'=>$result['message']
+    		]);
+    }
+
+    public function battle_form(Request $request){
+    	return view('userScore.battle');
+    }
+
+    public function battle(Request $request){
+		$username1 = $request->input('username1');
+    	$result1 = $this->getUserScore($username1);
+    	
+    	$username2 = $request->input('username2');
+    	$result2 = $this->getUserScore($username2);
+
+    	$message=NULL;
+    	if(!is_null($result1['message'])||!is_null($result2['message'])){
+    		$message = $result1['message'].$result2['message'];
+    	}
+
+    	if($result1['userScore']->totalScore() > $result2['userScore']->totalScore()){
+    		$winner = $result1['userScore'];
+    	}else if($result1['userScore']->totalScore() < $result2['userScore']->totalScore()){
+    		$winner = $result2['userScore'];
+    	}else{
+    		$winner = NULL;
+    	}
+
+    	return view('userScore.battle',[
+    		'winner'=>$winner,
+    		'userScore1'=>$result1['userScore'],
+    		'userScore2'=>$result2['userScore'], 
+    		'message'=>$message
+    		]);
+    }
+
+
+    private function getUserScore($username)
+    {
     	$result1 = $this->readEventsScore($username);
-    	$result2 = $this->readUserData($username);
+    	$result2 = $this->readUserFollowers($username);
+    	$result3 = $this->readUserStars($username);
 
 		$message = NULL;
 		$score = 0;
@@ -35,10 +85,15 @@ class UserScoreController extends Controller
     	if(is_string($result2)){
     		$message = $result2;
     	}else{
-    		$followers = $result2['followers'];
-    		$stars = $result2['stars'];
+    		$followers = $result2;
     	}
 
+    	if(is_string($result3)){
+    		$message = $result3;
+    	}else{
+    		$stars = $result3;
+    	}
+    	
     	$userScore = new UserScore([
     		'name'=>$username, 
     		'eventScore'=>$score, 
@@ -46,12 +101,11 @@ class UserScoreController extends Controller
     		'followers'=>$followers
     		]);
 
-    	return view('userScore.score',[
-    		'userScore'=>$userScore,
-    		'message'=>$message
-    		]);
+    	return array(
+    		'userScore' => $userScore,
+    		'message' => $message
+    		);
     }
-
 
     private function readEventsScore($username)
     {
@@ -106,7 +160,7 @@ class UserScoreController extends Controller
 		return $jsonArray;
     }
 
-    private function readUserData($username)
+    private function readUserFollowers($username)
     {
 		$url = "https://api.github.com/users/".$username;
 		$jsonArray = $this->getJsonArray($url);			
@@ -117,7 +171,11 @@ class UserScoreController extends Controller
 
 		$followers = $jsonArray['followers'];
 
-		$url = "https://api.github.com/users/".$username."/repos";
+		return $followers;
+    }
+
+    private function readUserStars($username){
+    	$url = "https://api.github.com/users/".$username."/repos";
 		$jsonArray = $this->getJsonArray($url);
 
 		if(isset($jsonArray['message'])){
@@ -125,11 +183,10 @@ class UserScoreController extends Controller
 		}
 
 		$totalStars = 0;
-
 		foreach ($jsonArray as $repo) {
 			$totalStars += intval($repo['stargazers_count']);
 		}
 
-		return array('followers'=>$followers, 'stars'=>$totalStars);
+		return $totalStars;
     }
 }
