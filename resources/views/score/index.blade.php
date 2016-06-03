@@ -2,6 +2,6 @@
 
 @section('content')
 
-@include('userScore.form_one')
+@include('score.form_one')
 
 @endsection

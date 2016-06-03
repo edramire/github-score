@@ -12,10 +12,12 @@
 */
 
 
-Route::get('/', 'UserScoreController@index');
+Route::get('/', 'ScoreController@index');
 
-Route::post('/score', 'UserScoreController@score');
-Route::get('/score', 'UserScoreController@score_form');
+Route::post('/score', 'ScoreController@score');
+Route::get('/score', 'ScoreController@score_form');
 
-Route::post('/battle', 'UserScoreController@battle');
-Route::get('/battle', 'UserScoreController@battle_form');
+Route::post('/battle', 'ScoreController@battle');
+Route::get('/battle', 'ScoreController@battle_form');
+
+Route::get('/all', 'ScoreController@getAll');

@@ -21,6 +21,7 @@
                 <ul class="nav navbar-nav">
                     <li><a href="{{ url('/score') }}">Find a score</a></li>
                     <li><a href="{{ url('/battle') }}">Battle Score</a></li>
+                    <li><a href="{{ url('/all') }}">All Saved Scores</a></li>
                 </ul>
 
                 <!-- Right Side Of Navbar -->
