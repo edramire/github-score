@@ -29,5 +29,11 @@ class EventServiceProvider extends ServiceProvider
     public function boot(DispatcherContract $events)
     {
         parent::boot($events);
+
+        // Register Event Listeners
+        Score::saving(function ($score) {
+            $score->onSaving();
+        });
+
     }
 }

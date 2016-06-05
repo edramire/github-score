@@ -7,26 +7,12 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Score;
 use DB;
+use GuzzleHttp\Client;
 
 //use Log;
 
 class ScoreController extends Controller
 {
-    private $sqlGetScore = "SELECT id, username, eventScore, followers, stars, score, updated_at FROM scores
-        WHERE username = :username;";
-
-    private $sqlCreateScore = "INSERT INTO scores(username, eventScore, followers, stars, score, updated_at)
-        VALUES (:username, :eventScore, :followers, :stars, :score, :updated_at);";
-
-    private $sqlUpdateScore = "UPDATE scores SET
-        eventScore = :eventScore,
-        followers = :followers,
-        stars = :stars,
-        score = :score,
-        updated_at = :updated_at
-        WHERE username = :username;";
-
-    private $sqlGetAllScores = "SELECT id, username, eventScore, followers, stars, score, updated_at FROM scores ORDER BY score DESC";
 
     public function index()
     {
@@ -41,17 +27,16 @@ class ScoreController extends Controller
     public function score(Request $request)
     {
         $username = $request->input('username');
+        $result = $this->getScoreArray($username);
+        $score = null;
 
-        $result = $this->getScore($username);
         if (is_null($result['message'])) {
-            $this->createOrUpdateScoreFromDB($result['score']);
+            $score = $this->firstOrCreateUser($result['score']);
         }
 
-        //$score = Score::firstOrCreate(['username'=>$username]);
-
         return view('score.score', [
-            'score'=>$result['score'],
-            'message'=>$result['message']
+            'score' => $score,
+            'message' => $result['message']
             ]);
     }
 
@@ -63,52 +48,37 @@ class ScoreController extends Controller
     public function battle(Request $request)
     {
         $username1 = $request->input('username1');
-        $result1 = $this->getScore($username1);
+        $result1 = $this->getScoreArray($username1);
 
         $username2 = $request->input('username2');
-        $result2 = $this->getScore($username2);
+        $result2 = $this->getScoreArray($username2);
 
         $message = null;
         $winner = null;
+        $score1 = null;
+        $score2 = null;
+
         if (!is_null($result1['message'])||!is_null($result2['message'])) {
             $message = $result1['message']." | ".$result2['message'];
         } else {
-            $this->createOrUpdateScoreFromDB($result1['score']);
-            $this->createOrUpdateScoreFromDB($result2['score']);
+            $score1 = $this->firstOrCreateUser($result1['score']);
+            $score2 = $this->firstOrCreateUser($result2['score']);
 
-            if ($result1['score']->getTotalScore() > $result2['score']->getTotalScore()) {
-                $winner = $result1['score'];
-            } else if ($result1['score']->getTotalScore() < $result2['score']->getTotalScore()) {
-                $winner = $result2['score'];
+            if ($score1['score'] > $score2['score']) {
+                $winner = $score1;
+            } else if ($score2['score'] > $score1['score']) {
+                $winner = $score2;
             } else {
                 $winner = null;
             }
         }
 
-        return view('score.battle', [
-            'winner'=>$winner,
-            'score1'=>$result1['score'],
-            'score2'=>$result2['score'],
-            'message'=>$message,
-            ]);
+        return view('score.battle', compact('winner', 'score1', 'score2', 'message'));
     }
 
     public function getAll()
     {
-        $results = $this->getAllScoresFromDB();
-
-        $scores = array();
-
-        foreach ($results as $index => $value) {
-            $scores[$index] = new Score([
-                'username'=>$value['username'],
-                'eventScore'=>$value['eventScore'],
-                'stars'=>$value['stars'],
-                'followers'=>$value['followers'],
-                'score'=> $value['score'],
-                'updated_at'=>$value['updated_at'],
-            ]);
-        }
+        $scores = DB::table('scores')->orderBy('score', 'desc')->get();
 
         return view('score.all', [
             'scores'=>$scores,
@@ -117,21 +87,31 @@ class ScoreController extends Controller
 
     /* inicio funciones de ayuda */
 
-    private function getScore($username)
+    private function firstOrCreateUser($scoreData)
+    {
+        $score = Score::firstOrNew(['username' => $scoreData['username']]);
+        $score->eventScore = $scoreData['eventScore'];
+        $score->followers = $scoreData['followers'];
+        $score->stars = $scoreData['stars'];
+        $score->save();
+        return $score;
+    }
+
+    private function getScoreArray($username)
     {
         $result1 = $this->readEventsScore($username);
         $result2 = $this->readUserFollowers($username);
         $result3 = $this->readUserStars($username);
 
         $message = null;
-        $score = 0;
+        $eventScore = 0;
         $stars = 0;
         $followers = 0;
 
         if (is_string($result1)) {
             $message = $result1;
         } else {
-            $score = $result1;
+            $eventScore = $result1;
         }
 
         if (is_string($result2)) {
@@ -146,30 +126,20 @@ class ScoreController extends Controller
             $stars = $result3;
         }
 
-        $score = new Score([
-            'username'=>$username,
-            'eventScore'=>$score,
-            'stars'=>$stars,
-            'followers'=>$followers,
-            'updated_at'=>date('Y-m-d H:i:s'),
-            ]);
-
-        $score->score = $score->getTotalScore();
-
-        return array(
-            'score' => $score,
-            'message' => $message
-            );
+        return ['score' => compact('username', 'eventScore', 'stars', 'followers'), 'message' => $message];
     }
 
     private function readEventsScore($username)
     {
         $url = "https://api.github.com/users/".$username."/events";
-        $code = $this->getHttpResponseCode($url);
+        $res = $this->connectToGitHub($url);
+        $code = $res->getStatusCode();
+
         if ($code != "200") {
             return "Error:".$code;
         }
-        $jsonArray = $this->getJsonArray($url);
+
+        $jsonArray = json_decode($res->getBody(), true);
 
         $score = 0;
         foreach ($jsonArray as $event) {
@@ -196,33 +166,17 @@ class ScoreController extends Controller
         return $score;
     }
 
-    private function getJsonArray($url)
-    {
-        //crear opciones de contexto, exigido por github
-        $opts = [
-            'http' => [
-                'method' => 'GET',
-                'header' => [
-                    'User-Agent: PHP'
-                ]
-            ]
-        ];
-
-        $context = stream_context_create($opts);
-        $content = file_get_contents($url, false, $context);
-        $jsonArray = json_decode($content, true);
-
-        return $jsonArray;
-    }
-
     private function readUserFollowers($username)
     {
         $url = "https://api.github.com/users/".$username;
-        $code = $this->getHttpResponseCode($url);
+        $res = $this->connectToGitHub($url);
+        $code = $res->getStatusCode();
+
         if ($code != "200") {
             return "Error:".$code;
         }
-        $jsonArray = $this->getJsonArray($url);
+
+        $jsonArray = json_decode($res->getBody(), true);
 
         $followers = $jsonArray['followers'];
 
@@ -232,11 +186,14 @@ class ScoreController extends Controller
     private function readUserStars($username)
     {
         $url = "https://api.github.com/users/".$username."/repos";
-        $code = $this->getHttpResponseCode($url);
+        $res = $this->connectToGitHub($url);
+        $code = $res->getStatusCode();
+
         if ($code != "200") {
             return "Error:".$code;
         }
-        $jsonArray = $this->getJsonArray($url);
+
+        $jsonArray = json_decode($res->getBody(), true);
 
         $totalStars = 0;
         foreach ($jsonArray as $repo) {
@@ -246,51 +203,11 @@ class ScoreController extends Controller
         return $totalStars;
     }
 
-    private function getHttpResponseCode($url)
+    private function connectToGitHub($url)
     {
-        $opts = [
-            'http' => [
-                'method' => 'GET',
-                'header' => [
-                    'User-Agent: PHP'
-                ]
-            ]
-        ];
-        stream_context_set_default($opts);
-        $headers = get_headers($url);
-        return substr($headers[0], 9, 3);
-    }
-
-    private function createOrUpdateScoreFromDB($score)
-    {
-        $pdo = DB::connection()->getPdo();
-        $query = $pdo->prepare($this->sqlGetScore);
-        $query->execute([':username'=>$score->username]);
-        $rows = $query->fetchAll();
-
-        if (count($rows) > 0) {
-            $query2 = $pdo->prepare($this->sqlUpdateScore);
-        } else {
-            $query2 = $pdo->prepare($this->sqlCreateScore);
-        }
-
-        $query2->execute([
-            ':username' => $score->username,
-            ':eventScore' => $score->eventScore,
-            ':followers' => $score->followers,
-            ':stars' => $score->stars,
-            ':score' => $score->score,
-            ':updated_at' => $score->updated_at,
-            ]);
-    }
-
-
-    private function getAllScoresFromDB()
-    {
-        $pdo = DB::connection()->getPdo();
-        $query = $pdo->prepare($this->sqlGetAllScores);
-        $query->execute();
-        $rows = $query->fetchAll();
-        return $rows;
+        return (new Client())->request('GET', $url, [
+            'auth' => [env('GITHUB_USERNAME'), env('GITHUB_PASSWORD')],
+            'http_errors' => false,
+        ]);
     }
 }

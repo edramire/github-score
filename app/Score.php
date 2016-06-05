@@ -15,8 +15,8 @@ class Score extends Model
         'username','eventScore','followers','stars','score','updated_at',
     ];
 
-    public function getTotalScore()
+    public function onSaving()
     {
-        return $this->eventScore*0.4 + $this->stars*0.4 + $this->followers*0.2;
+        $this->score = $this->eventScore*0.4 + $this->stars*0.4 + $this->followers*0.2;
     }
 }
