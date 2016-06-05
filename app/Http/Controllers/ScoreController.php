@@ -9,8 +9,6 @@ use App\Score;
 use DB;
 use GuzzleHttp\Client;
 
-//use Log;
-
 class ScoreController extends Controller
 {
 

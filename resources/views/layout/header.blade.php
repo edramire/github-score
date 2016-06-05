@@ -19,9 +19,9 @@
             <div class="collapse navbar-collapse" id="app-navbar-collapse">
                 <!-- Left Side Of Navbar -->
                 <ul class="nav navbar-nav">
-                    <li><a href="{{ url('/score') }}">Find a score</a></li>
-                    <li><a href="{{ url('/battle') }}">Battle Score</a></li>
-                    <li><a href="{{ url('/all') }}">All Saved Scores</a></li>
+                    <li class="{{($_active_menu==='score') ? 'active' : ''}}"><a href="{{ url('/score') }}">Find a score</a></li>
+                    <li class="{{($_active_menu==='battle') ? 'active' : ''}}"><a href="{{ url('/battle') }}">Battle Score</a></li>
+                    <li class="{{($_active_menu==='all') ? 'active' : ''}}"><a href="{{ url('/all') }}">All Saved Scores</a></li>
                 </ul>
 
                 <!-- Right Side Of Navbar -->

@@ -11,13 +11,16 @@
 |
 */
 
-
 Route::get('/', 'ScoreController@index');
 
-Route::post('/score', 'ScoreController@score');
-Route::get('/score', 'ScoreController@scoreForm');
-
-Route::post('/battle', 'ScoreController@battle');
-Route::get('/battle', 'ScoreController@battleForm');
-
-Route::get('/all', 'ScoreController@getAll');
+Route::group(['_active_menu' => 'score'], function () {
+    Route::post('/score', 'ScoreController@score');
+    Route::get('/score', 'ScoreController@scoreForm');
+});
+Route::group(['_active_menu' => 'battle'], function () {
+    Route::post('/battle', 'ScoreController@battle');
+    Route::get('/battle', 'ScoreController@battleForm');
+});
+Route::group(['_active_menu' => 'all'], function () {
+    Route::get('/all', 'ScoreController@getAll');
+});
