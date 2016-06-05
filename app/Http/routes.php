@@ -15,9 +15,9 @@
 Route::get('/', 'ScoreController@index');
 
 Route::post('/score', 'ScoreController@score');
-Route::get('/score', 'ScoreController@score_form');
+Route::get('/score', 'ScoreController@scoreForm');
 
 Route::post('/battle', 'ScoreController@battle');
-Route::get('/battle', 'ScoreController@battle_form');
+Route::get('/battle', 'ScoreController@battleForm');
 
 Route::get('/all', 'ScoreController@getAll');
